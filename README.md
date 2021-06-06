@@ -310,11 +310,9 @@ cleos push action bank chgcp '["alice", "bob"]' -p bob@active
 ```
 Check the table, and you'll see that alice's new loan was erased and bob's incremented accordingly. :thumbsup:
 
-Here are some interesting things to try:
-
 ## Step 7. Reset chain script
-This script will kill ```nodeos```, restart it using our start script (which deletes all blocks), create the accounts, build the contract, deploy it, create some loans, and print the table. This is the start of a build process. 
-> Note: there are many options for test frameworks. I prefer a combination of C++ unit tests and Go integration/function testing.
+This script will kill ```nodeos```, restart it using our start script (which deletes all blocks), create the accounts, build the contract, deploy it, create some loans, and print the table.  
+> Note: there are many options for test frameworks. I prefer a combination of C++ unit tests and Go integration/function testing. I use Github Actions to run all tests on push, and PRs must pass all tests before merging. This is especially true on larger open source projects where I may not know the developer.
 ``` bash
 cat <<EOF > reset.sh
 #!/bin/bash
@@ -341,3 +339,5 @@ EOF
 chmod +x reset.sh
 ./reset.sh
 ```
+
+### [Learn how to create a Javascript client using this guide](js-client.md)
