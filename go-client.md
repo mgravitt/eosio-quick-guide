@@ -1,1 +1,0 @@
-# Go client coming soon

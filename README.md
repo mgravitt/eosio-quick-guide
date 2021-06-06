@@ -1,23 +1,49 @@
 # EOSIO Quick Start
-This guide is modeled from the Ethereum quick start at [moschetti.org](https://www.moschetti.org/rants/geth1.html). 
+This guide :scroll: is modeled from the Ethereum quick start at [moschetti.org](https://www.moschetti.org/rants/geth1.html). :sunglasses:
+
 We will:
-- install the required components
-- create a wallet to sign transactions
-- run a single node blockchain
-- build and run a smart contract to track who owns the bank money
-- interact with the blockchain via EOSIO CLI tools
-- interact with the blockchain using Go
-- maybe try the [Java SDK](https://github.com/EOSIO/eosio-java), although my Java experience is circa 2002
-- maybe try the [JS SDK](https://github.com/EOSIO/eosjs), the most popular way to interact by far
+- :wrench: install the required components
+- :key: create a wallet to sign transactions 
+- :link: run a single node blockchain
+- :moneybag: build and run a smart contract to track who owns the bank money
+- :computer: interact with the blockchain via EOSIO CLI tools
+- :package: interact with the blockchain using Nodejs, the most popular way by far
+- **extra** :thinking: try the [Java SDK](https://github.com/EOSIO/eosio-java), although my Java experience is circa 2002
+- **extra** :thinking: try the [Go SDK](https://github.com/eoscanada/eos-go), my favorite 
 
 For full EOSIO technical documentation, the best resource is the [Developer's Portal](https://developers.eos.io/welcome/latest/getting-started-guide/local-development-environment/index)
 
 For the source code of the smart contract and the scripts, see the ```develop``` branch of this repo. 
 
+## Usage note :notebook:
+All code blocks in this guide are meant to copy --> paste-to-terminal friendly. :nerd_face: I've found that writing guides this way is beneficial for the user and probably more importantly, they force me (the author) to ensure instructions are repeatable. (tested on Ubuntu 20.04+bash)
+
+It's also better for multi-lingual audiences :world_africa: and works the same locally and via ```ssh```. And frankly, since I express concepts more effectively with code than words, this is the way. :pray: :lotus_position:
+
+Many markdown renderers (like Github) have a floating copy icon button that appears when you hover over the code block. :thumbsup:  
+
+If I use a code-block for formatting that is NOT meant to be copy-->pasted (e.g. for showing terminal output), you will see the stop-sign :stop_sign: emoji just above it. 
+
+Almost all code-blocks are also *idempotent*, meaning they can be run over and over without any problems. The exception to this rules is that you'll have to manually delete your local wallet if you want to re-create it. Delete it with ```rm -r ~/eosio-wallet```. I never want to script deleting a wallet **JUST IN CASE**. :safety_vest:
+
+You can fully restart the guide by resetting to the ```main``` branch or erasing all files except the ```README.md```, ```js-client.md```, and ```.gitignore```. 
+
+## Steps
+1. [Install EOSIO CDT/SDK and the Node](#step-1-install-eosio-cdtsdk-and-the-node)
+2. [Start ```nodeos``` for single-node network](#step-2-start-nodeos-for-single-node-network)
+3. [Create a wallet and import the key :key:](#step-2-start-nodeos-for-single-node-network)
+4. [Create accounts :red_haired_woman:](#step-2-start-nodeos-for-single-node-network)
+5. [Write and deploy a smart contract :scroll:](#step-2-start-nodeos-for-single-node-network)
+6. [Interact with the contract using ```cleos```](#step-2-start-nodeos-for-single-node-network)
+7. [Reset chain script :link: :arrows_counterclockwise:](#step-2-start-nodeos-for-single-node-network)
+
+#### Up Next: [Create a Javascript client using this guide](js-client.md)
+
 ### Prerequisites
 - OSX (+brew) or Linux
-- Windoze users must use Docker
+- Windoze users should use a Ubuntu VM and ```ssh```. All commands in the guide :notebook: work the same via ```ssh```.
 
+***
 ## Step 1. Install EOSIO CDT/SDK and the Node
 ### OSX
 ```
@@ -32,11 +58,13 @@ brew install eosio
 ```
 UBUNTU_VERSION=20.04   # <-- CHANGE this your version 16.04, 18.04, or 20.04
 
-wget https://github.com/eosio/eosio.cdt/releases/download/v1.8.0/eosio.cdt_1.8.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
-sudo apt install ./eosio.cdt_1.8.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
+wget https://github.com/eosio/eosio.cdt/releases/download/v1.8.0/eosio.cdt_1.8.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb && wget https://github.com/eosio/eos/releases/download/v2.1.0/eosio_2.1.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
 
-wget https://github.com/eosio/eos/releases/download/v2.1.0/eosio_2.1.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
-sudo apt install ./eosio_2.1.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
+sudo apt install ./eosio.cdt_1.8.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb ./eosio_2.1.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
+
+rm ./eosio.cdt_1.8.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb 
+rm ./eosio_2.1.0-1-ubuntu-${UBUNTU_VERSION}_amd64.deb
+
 ```
 
 For other linux distributions, see the [eosio.cdt](https://github.com/eosio/eosio.cdt) or [eosio](https://github.com/eosio/eos) READMEs.
@@ -50,12 +78,13 @@ For other linux distributions, see the [eosio.cdt](https://github.com/eosio/eosi
 | ```eosio-cpp```   | eosio + cpp | this smart contract compiler, although calling via CMake tooling is best practice
 
 
-## Step 2. Start ```nodeos``` for single-node network
+## Step 2. Start ```nodeos``` for single-node network :link:
 
 EOSIO is primarily based on plugins for design and modularity. The plugins below are the best for getting started. 
 > NOTE: the ```delete-all-blocks``` parameters permanently erases the entire chain and creates a freshie on restart (just remove it to keep the chain)
 To make it easier to build upon, let's make this a bash script. Paste the below block into your terminal.
 ``` bash
+mkdir ~/eosio && cd eosio
 cat <<EOF > start.sh
 
 nodeos -e -p eosio \
@@ -73,34 +102,37 @@ nodeos -e -p eosio \
 --verbose-http-errors >> nodeos.log 2>&1 &
 EOF
 chmod +x start.sh
+./start.sh
 ```
-## Step 3. Create a wallet and import the key
+You can check the log with ```tail -f nodoes.log``` and check that JSON RPC is up with ```cleos get info```. This will provide a basic descriptor payload of the blockchain at that moment.
+
+## Step 3. Create a wallet and import the key :key:
 
 ``` bash
-mkdir ~/eosio && cd ~/eosio
 cleos wallet create --file wallet_password
 ```
-### Unlocking the wallet
+### Unlocking the wallet :unlock:
 ```keosd``` has automatic wallet locking at about 15 mins of inactivity. If it locks run the following command to unlock it.
 ``` bash
 cleos wallet unlock < wallet_password
 ```
 
-### Import key
+>Note: this creates a folder at ```~/eosio-wallet``` to store the encrypted secrets. You can simply erase it to start over. EOSIO supports signing transactions via QR code, browser plugins, cloud key vaults, yubikey devices, and combinations thereof.
+
+### Import key :key:
 We will use the well-known EOSIO default key pair for simplicity. To create new ones, you may use ```cleos create key```
-```
+
 Default EOSIO Key Pair
-Public key: EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
-Private key: 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
-```
+- Public key: ```EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV```
+- Private key: ```5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3```
 
 Use this command to import the key.
 ``` bash
 cleos wallet import --private-key 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
 ```
 
-## Step 4. Create accounts
-- The account names must be 1-12 characters, all lowercase for alpha, 1-5 for numeric, and periods/dots are also allowed. (^[a-z1-5.]{1,11}[a-z1-5]$)|(^[a-z1-5.]{12}[a-j1-5]$)
+## Step 4. Create accounts :red_haired_woman:
+- The account names must be 1-12 characters, all lowercase for alpha, 1-5 for numeric, and periods/dots are also allowed. Regex: ```(^[a-z1-5.]{1,11}[a-z1-5]$)|(^[a-z1-5.]{12}[a-j1-5]$)```
 - Common name formats are like ```alice```, ```alice.nba```, or ```1b2j3d1hsl14```
 - Accounts require an ```active``` key and ```owner``` key. Permissions are feature rich. For more info, see the [docs](https://developers.eos.io/welcome/v2.0/protocol/accounts_and_permissions)
 - Every account may optionally have a smart contract deployed to it; "contract" accounts and "user" accounts are the same construct.
@@ -110,20 +142,20 @@ cleos create account eosio alice EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5
 cleos create account eosio bank EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV EOS6MRyAjQq8ud7hVNYcfnVPJqcVpscN5So8BhtHuGYqET5GDW5CV
 ```
 
-You can verify that the accounts were created as well as check resource usage:
+You can verify that the accounts were created as well as check resource usage:  :stop_sign:
 ``` bash
 cleos get account <account-name>
 ```
 
-## Step 5. Write and deploy a smart contract
+## Step 5. Write and deploy a smart contract :scroll:
 - The contract will maintain loan balances due to the bank. 
 - There will be 3 actions that can be called:
   1. ```borrowed``` - an account has borrowed assets
   2. ```paid``` - an account has paid down their debt
   3. ```chgcp``` - an account has agreed to take on the debt of an existing account's balance
-- EOSIO has a standard asset data type that abstracts asset math, storage, etc. It is the same data type and smart contract used for the EOS token on the public network.
-- There is no concept of **native** vs **smart contract** tokens, like you see with ETH vs ERC20 or ALGO vs Algorand ASA.
-- Most private EOSIO private blockchains do not have a network token at all. Public chains use them to stake for system resources, like CPU, RAM, and Network, which managed independently.
+- EOSIO has a standard asset :moneybag: data type that abstracts asset math, storage :floppy_disk:, etc. It is the same data type and smart contract used for the EOS token on the public network. :earth_africa:
+- There is no concept of **native** vs **smart contract** tokens, like you see with ETH vs ERC20 or ALGO vs Algorand ASA. (No right or wrong answer on this design element, and chains are still experimenting with which model works best.)
+- Most private EOSIO blockchains :chains: do not have a network token at all. Public chains use them to stake for system resources, like CPU, RAM, and Network, which managed independently.
 
 Run the following code block to populate our ```loan.cpp``` file.
 ``` c++
@@ -162,19 +194,19 @@ public:
    // - chgcp     - change the counterparty
 
    [[eosio::action]] void
-   borrowed(const eosio::name &counterparty, const eosio::asset &amount_borrowed)
+   borrowed(const eosio::name &counterparty, const eosio::asset &amount)
    {
       // the borrower/counterparty must approve new borrowing
       eosio::require_auth(counterparty);                // if not signed by counterparty, error out and rollback
-      eosio::check(amount_borrowed.amount > 0, "amount borrowed must be greater than 0");
-      adjust_amount_due(counterparty, amount_borrowed); // private function (see below)
+      eosio::check(amount.amount > 0, "amount borrowed must be greater than 0");
+      adjust_amount_due(counterparty, amount); // private function (see below)
    }
 
-   [[eosio::action]] void paid(const eosio::name &counterparty, const eosio::asset &amount_paid)
+   [[eosio::action]] void paid(const eosio::name &counterparty, const eosio::asset &amount)
    {
       // the bank (this contract), a.k.a. "get_self()" must approve payments against the amount_due
       eosio::require_auth(get_self());
-      adjust_amount_due(counterparty, amount_paid * -1);
+      adjust_amount_due(counterparty, amount * -1);
    }
 
    [[eosio::action]] void chgcp(const eosio::name &current_cp, const eosio::name &new_cp)
@@ -234,35 +266,39 @@ private:
 EOF
 ```
 
-## Compile contract to WASM
+## Compile contract to WASM and generate ABI :toolbox:
 ``` bash
 eosio-cpp -abigen -o loan.wasm loan.cpp
 ```
 
-You will see some warnings that our actions do not have [Ricardian contracts](https://eos.io/for-developers/build/ricardian-template-toolkit). These are template documents that explain the transaction to the user in human-readable form. These are displayed in GUI wallets when a user is asked to approve a transaction. It is akin to "terms and conditions" of a smart contract action.
+You will see some warnings that our actions do not have [Ricardian contracts](https://eos.io/for-developers/build/ricardian-template-toolkit). These are template documents :scroll: that explain the transaction to the user in human-readable :white_haired_man: form. These are displayed in GUI wallets when a user is asked to approve a transaction. It is akin to the "terms and conditions" of a smart contract action.
 
 The command creates ```loan.wasm``` and ```loan.abi```.
 
-## Deploy the contract
+I believe that EOSIO was the first blockchain to use Web Assembly for the VM (not sure!). Currently, it the VM of choice by a long shot. All serious contenders are leveraging it, including Substrate (Polkadot/Kusama), Cosmos SDK (Binance DEX/Hyperledger), Ethereum 2.0, Solana, and Cardano (:laughing:).  A [schelling point](https://nav.al/schelling-point) is arising.
+
+Learn more about why [EOSIO VM](https://github.com/EOSIO/eos-vm/blob/master/README.md).
+
+## Deploy the contract :scroll:
 ``` bash
 cleos set contract bank . loan.wasm loan.abi
 ```
 
-If you take a look at the account (see above), you'll see that there is 403.8 KiB of RAM used. Our smart contract WASM and ABI is now stored in RAM within nodeos, ready to be called. 
+If you take a look at the account, you'll see that there is 403.8 KiB of RAM used. Our smart contract WASM and ABI is now stored in RAM within nodeos, ready to be called. :fire:
 
 ## Step 6. Interact with the contract using ```cleos```
-### Pushing actions
-Creating and broadcasting transactions can be done with ```cleos push action``` with the following parameters.
+### Pushing actions :arrow_forward:
+Creating and broadcasting transactions can be done with ```cleos push action``` with the following parameters.  :stop_sign:
 ``` bash
 cleos push action <contract-account> <action-name> <action-parameters> -p <authorizer>@<permission-level>
 ```
 
-Alice borrows $100 to create our first loan record. 
+Alice :red_haired_woman: borrows $100 :moneybag: to create our first loan record. :bank:
 ``` bash
 cleos push action bank borrowed '["alice", "100.00 USD"]' -p alice@active
 ```
 
-Querying the on-chain tables can be done with ```cleos get table``` with the following parameters.
+Querying the on-chain tables can be done with ```cleos get table``` with the following parameters.  :stop_sign:
 ``` bash
 cleos get table <contract-account> <table-scope> <table-name>
 ```
@@ -272,7 +308,7 @@ We can view the ```loan_table``` with the ```cleos get table``` command.
 ``` bash
 cleos get table bank bank loans
 ```
-The output will look like this: 
+The output will look like this: :stop_sign:
 ``` json
 {
   "rows": [{
@@ -288,31 +324,33 @@ The output will look like this:
 ```
 > Note: the ```more``` and ```next-key``` attributes are used for paginating through the table over multiple requests. 
 
-### Borrow more as Alice
+> Note: we can use ```cleos``` to query the tables by the other indexes that we created to search and sort. :mag_right:
+
+### Borrow more as Alice :red_haired_woman:
 ``` bash
 cleos push action bank borrowed '["alice", "100.00 USD"]' -p alice@active
 ```
 Check the loan table again and you will see that the amount_due increased.
 
-### Pay a bit off
+### Pay a bit off :moneybag:
 ``` bash
 cleos push action bank paid '["alice", "55.00 USD"]' -p bank@active
 ```
-### Change the counter party to bob
+### Change the counter party to Bob :white_haired_man:
 ``` bash
 cleos push action bank chgcp '["alice", "bob"]' -p bob@active
 ```
 
-### Borrow for Alice again and change counter party again
+### Borrow for Alice :red_haired_woman: again and change counter party to Bob :white_haired_man: again
 ``` bash 
 cleos push action bank borrowed '["alice", "650.00 USD"]' -p alice@active
 cleos push action bank chgcp '["alice", "bob"]' -p bob@active
 ```
-Check the table, and you'll see that alice's new loan was erased and bob's incremented accordingly. :thumbsup:
+Check the table, and you'll see that Alice's new loan was erased and Bob's incremented accordingly. :thumbsup: :thumbsup: :tada:
 
-## Step 7. Reset chain script
-This script will kill ```nodeos```, restart it using our start script (which deletes all blocks), create the accounts, build the contract, deploy it, create some loans, and print the table.  
-> Note: there are many options for test frameworks. I prefer a combination of C++ unit tests and Go integration/function testing. I use Github Actions to run all tests on push, and PRs must pass all tests before merging. This is especially true on larger open source projects where I may not know the developer.
+## Step 7. Reset chain script :link: :arrows_counterclockwise:
+This script will kill :skull_and_crossbones: ```nodeos```, restart it using our start script (which deletes all blocks :bricks:), unlocks the wallet if needed, create the accounts, compile the contract, deploy it, create some loans, and print the table.  
+> Note: there are many options for test frameworks. I prefer a combination of C++ unit tests and Go integration/function testing. I use Github Actions to run all tests on push, and PRs must pass all tests before merging. This is especially true on larger open source projects where I may not know the developer. :nerd_face:
 ``` bash
 cat <<EOF > reset.sh
 #!/bin/bash
@@ -321,6 +359,7 @@ pkill nodeos
 sleep 1s  # give nodeos time to respond to the KILL - adjust as needed, increase duration for slower CPUs
 
 ./start.sh
+cleos wallet unlock < wallet_password # this will show error if wallet is already open, but that is fine
 
 sleep 1s  # give nodeos time to start making blocks - adjust as needed
 
@@ -340,4 +379,6 @@ chmod +x reset.sh
 ./reset.sh
 ```
 
-### [Learn how to create a Javascript client using this guide](js-client.md)
+## Up Next: [Create a Javascript client using this guide](js-client.md)
+### Go client quick-start- coming soon :thinking:
+### Java client quick-start- coming soon :thinking:

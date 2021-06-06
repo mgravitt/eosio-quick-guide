@@ -1,3 +1,6 @@
-wallet_password
 nodeos.log
 node_modules
+loan.wasm
+loan.abi
+yarn.lock
+wallet_password
