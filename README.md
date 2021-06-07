@@ -193,8 +193,8 @@ public:
    // - paid      - decrements amount_due OR error if not exists
    // - chgcp     - change the counterparty
 
-   [[eosio::action]] void
-   borrowed(const eosio::name &counterparty, const eosio::asset &amount)
+   [[eosio::action]] 
+   void borrowed(const eosio::name &counterparty, const eosio::asset &amount)
    {
       // the borrower/counterparty must approve new borrowing
       eosio::require_auth(counterparty);                // if not signed by counterparty, error out and rollback
@@ -202,14 +202,16 @@ public:
       adjust_amount_due(counterparty, amount); // private function (see below)
    }
 
-   [[eosio::action]] void paid(const eosio::name &counterparty, const eosio::asset &amount)
+   [[eosio::action]] 
+   void paid(const eosio::name &counterparty, const eosio::asset &amount)
    {
       // the bank (this contract), a.k.a. "get_self()" must approve payments against the amount_due
       eosio::require_auth(get_self());
       adjust_amount_due(counterparty, amount * -1);
    }
 
-   [[eosio::action]] void chgcp(const eosio::name &current_cp, const eosio::name &new_cp)
+   [[eosio::action]] 
+   void chgcp(const eosio::name &current_cp, const eosio::name &new_cp)
    {
       // the new counterparty must authorize responsibility for new debts
       eosio::require_auth(new_cp);
